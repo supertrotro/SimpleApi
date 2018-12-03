@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Logging;
 using Simple.Api.Repository;
 using System;
+using System.Threading.Tasks;
 
 namespace Simple.Api.Controllers
 {
@@ -23,7 +24,7 @@ namespace Simple.Api.Controllers
 
         // POST api/data
         [HttpGet("key/{key}")]
-        public ActionResult<string> GetData(string key)
+        public async Task<ActionResult<string>> GetDataAsync(string key)
         {
             try
             {
@@ -32,14 +33,14 @@ namespace Simple.Api.Controllers
                     return BadRequest();
                 }
                 _logger.LogDebug($"Find data with the key{key}");
-                var data = _dataRepository.GetData(key);
-                if (string.IsNullOrEmpty(data))
+                var data =await _dataRepository.GetDataAsync(key);
+                if (data==null)
                 {
                     _logger.LogDebug($"Data not found for the key{key}");
                     return NotFound();
                 }
                 _logger.LogDebug($"Data found: {key}: {data}");
-                return Ok(data);
+                return Ok(data.Value);
             }
             catch (Exception e)
             {
@@ -50,14 +51,19 @@ namespace Simple.Api.Controllers
 
         // GET api/data/key/123/value/HelloWorld
         [HttpPost("key/{key}/value/{value}")]
-        public ActionResult PostData(string key, string value)
+        public async Task<ActionResult> PostDataAsync(string key, string value)
         {
             try
             {
                 if (string.IsNullOrEmpty(key))
                     return BadRequest();
                 _logger.LogDebug($"Start to save data into repository for {key}:{value}");
-                _dataRepository.SaveData(key, value);
+                var existing = await _dataRepository.GetDataAsync(key);
+                if (existing != null)
+                {
+                    return Conflict(existing);
+                }
+                await _dataRepository.CreateDataAsync(key, value);
                 return Ok();
             }
             catch (Exception e)

@@ -10,6 +10,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Simple.Api.Repository;
 using Swashbuckle.AspNetCore.Swagger;
 
 namespace Simple.Api
@@ -32,6 +33,17 @@ namespace Simple.Api
             {
                 c.SwaggerDoc("v1", new Info { Title = "Simple Data API", Version = "v1" });
             });
+
+            //MongoDb
+            services.Configure<Settings>(
+                options =>
+                {
+                    options.ConnectionString = Configuration.GetSection("MongoDb:ConnectionString").Value;
+                    options.Database = Configuration.GetSection("MongoDb:Database").Value;
+                });
+            // Add Database context
+            services.AddTransient<IDbContext, DbContext>();
+
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
