@@ -39,7 +39,7 @@ namespace Simple.Api.Controllers
                     return NotFound();
                 }
                 _logger.LogDebug($"Data found: {key}: {data}");
-                return data;
+                return Ok(data);
             }
             catch (Exception e)
             {
@@ -50,17 +50,21 @@ namespace Simple.Api.Controllers
 
         // GET api/data/key/123/value/HelloWorld
         [HttpPost("key/{key}/value/{value}")]
-        public void PostData(string key, string value)
+        public ActionResult PostData(string key, string value)
         {
-            // Method intentionally left empty.
+            try
+            {
+                if (string.IsNullOrEmpty(key))
+                    return BadRequest();
+                _logger.LogDebug($"Start to save data into repository for {key}:{value}");
+                _dataRepository.SaveData(key, value);
+                return Ok();
+            }
+            catch (Exception e)
+            {
+                _logger.LogDebug($"{e} exception found in writing [{key}:{value}]. Details: {e}");
+                return StatusCode(500); 
+            }
         }
-
-        // POST api/data
-        [HttpPost]
-        public void PostData([FromBody] string value)
-        {
-            // Method intentionally left empty.
-        }
-
     }
 }

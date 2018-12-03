@@ -1,18 +1,20 @@
-﻿using FluentAssertions;
+﻿using System;
+using FluentAssertions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
 using Simple.Api.Controllers;
 using Simple.Api.Repository;
-using System;
 using Xunit;
 
-namespace Simple.Api.Tests.UnitTests
+namespace Simple.Api.Tests.Controller
 {
     public class DataControllerTests
     {
         private readonly IDataRepository _repository;
-        private DataController _controller;
+        private readonly DataController _controller;
+        private string example_key = "example_key";
+        private string example_value = "example_value";
 
         public DataControllerTests()
         {
@@ -54,17 +56,17 @@ namespace Simple.Api.Tests.UnitTests
         public void Should_return_value_when_it_is_in_repository()
         {
             //Arrange
-            var key = "example_key";
-            var value = "example_value";
-            _repository.GetData(key).Returns(value);
+
+            _repository.GetData(example_key).Returns(example_value);
             //Act
-            var ret = _controller.GetData(key);
+            var ret = _controller.GetData(example_key);
             //Assert
-            ret.Value.Should().Be(value);
+            ret.Result.Should().BeOfType<OkObjectResult>();
+            ((OkObjectResult) ret.Result).Value.Should().Be(example_value);
         }
 
         [Fact]
-        public void Should_show_an_internal_error_for_any_exception_in_procesing_request()
+        public void Should_show_an_internal_error_for_any_exception_in_getting_value_from_repository()
         {
             //Arrange
             var key = "^$$&$&";
@@ -74,6 +76,41 @@ namespace Simple.Api.Tests.UnitTests
             //Assert
             ret.Result.Should().BeOfType<StatusCodeResult>();
             ((StatusCodeResult)ret.Result).StatusCode.Should().Be(500);
+        }
+
+        [Fact]
+        public void Should_show_a_bad_request_exception_for_a_request_with_an_empty_key()
+        {
+            //Act
+            var ret = _controller.PostData(string.Empty, "");
+            //Arrange
+
+            ret.Should().BeOfType<BadRequestResult>();
+
+        }
+        [Fact]
+        public void Should_show_an_internal_exception_for_any_exception_in_saving_data_into_repository()
+        {
+            //Arrange
+            _repository.SaveData(example_key, example_value).Returns(x => throw new Exception("Something wrong"));
+            //Act
+           var ret =  _controller.PostData(example_key, example_value);
+            
+            //Assert
+            ret.Should().BeOfType<StatusCodeResult>();
+            ((StatusCodeResult) ret).StatusCode.Should().Be(500);
+        }
+
+        [Fact]
+        public void Should_show_sucess_message_when_value_is_saved_into_repository()
+        {
+            //Arrange
+            _repository.SaveData(example_key, example_value).Returns(true);
+            //Act
+            var ret = _controller.PostData(example_key, example_value);
+            //Assert
+            ret.Should().BeOfType<OkResult>();
+
         }
     }
 }
