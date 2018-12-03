@@ -6,7 +6,8 @@ using System.Threading.Tasks;
 
 namespace Simple.Api.Controllers
 {
-    [Route("api/[controller]")]
+    [ApiVersion("1.0")]
+    [Route("api/v{version:apiVersion}/[controller]")]
     [ApiController]
     public class DataController : ControllerBase
     {
@@ -22,7 +23,7 @@ namespace Simple.Api.Controllers
         [HttpGet]
         public string Index() => HealthyMessage;
 
-        // POST api/data
+        // GET api/data/key/123
         [HttpGet("key/{key}")]
         public async Task<ActionResult<string>> GetDataAsync(string key)
         {
@@ -49,7 +50,7 @@ namespace Simple.Api.Controllers
             }
         }
 
-        // GET api/data/key/123/value/HelloWorld
+        // POST api/data/key/123/value/HelloWorld
         [HttpPost("key/{key}/value/{value}")]
         public async Task<ActionResult> PostDataAsync(string key, string value)
         {
@@ -72,5 +73,31 @@ namespace Simple.Api.Controllers
                 return StatusCode(500); 
             }
         }
+
+        // GET api/data/key/123/value/HelloWorld
+        [HttpPut("key/{key}/value/{value}")]
+        public async Task<ActionResult> UpdateDataAsync(string key, string value)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(key))
+                    return BadRequest();
+                _logger.LogDebug($"Start to save data into repository for {key}:{value}");
+                var existing = await _dataRepository.GetDataAsync(key);
+                if (existing != null)
+                {
+                    return Conflict(existing);
+                }
+                await _dataRepository.CreateDataAsync(key, value);
+                return Ok();
+            }
+            catch (Exception e)
+            {
+                _logger.LogDebug($"{e} exception found in writing [{key}:{value}]. Details: {e}");
+                return StatusCode(500);
+            }
+        }
+
+
     }
 }

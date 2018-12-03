@@ -21,6 +21,11 @@ namespace Simple.Api.Repository
             _options = options;
             var client = new MongoClient(options.Value.ConnectionString);
             _db = client.GetDatabase(options.Value.Database);
+            var tmp = _db.GetCollection<DataItem>(_options.Value.Collection);
+            if (tmp == null)
+            {
+                _db.CreateCollection(_options.Value.Collection);
+            }
         }
         public IMongoCollection<DataItem> Items => _db.GetCollection<DataItem>(_options.Value.Collection);
     }
