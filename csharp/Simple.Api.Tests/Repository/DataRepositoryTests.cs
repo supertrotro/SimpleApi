@@ -1,5 +1,5 @@
 ﻿using FluentAssertions;
-using MongoDB.Driver;
+using Microsoft.Extensions.Options;
 using NSubstitute;
 using Simple.Api.Repository;
 using System.Threading.Tasks;
@@ -7,35 +7,33 @@ using Xunit;
 
 namespace Simple.Api.Tests.Repository
 {
-    public class DataRepositoryTests
+    [Trait("Category", "IntegrationTests")]
+    public class DataRepositoryTests : MongoIntegrationTest
     {
-        private IDbContext _dbContext;
-        private IDataRepository _repository;
-
+        private readonly IDataRepository _repository;
+        private readonly IDbContext _context;
+        internal string DatabaseName = "IntegrationTest";
+        internal string CollectionName = "IntegrationTestCollection";
         public DataRepositoryTests()
         {
-            _dbContext = NSubstitute.Substitute.For<IDbContext>();
-            _repository = new DataRepository(dbContext: _dbContext);
+            CreateConnection();
+            var options = Substitute.For<IOptions<Settings>>();
+            options.Value.Returns(new Settings()
+            {
+                ConnectionString = Runner.ConnectionString,
+                Collection = CollectionName,
+                Database = DatabaseName
+            });
+            _context = new DbContext(options);
+            _repository = new DataRepository(_context);
         }
 
         [Fact]
-        public void Should_find_data_item_by_key()
+        public async Task Should_find_data_item_by_key()
         {
             //Arrange
-            var cursorMock = Substitute.For<IAsyncCursor<string>>();
-            cursorMock.MoveNextAsync().Returns(Task.FromResult(true), Task.FromResult(false));
-            cursorMock.Current.Returns(new[] { "asd" });
-
-            var ff = Substitute.For<IFindFluent<string, string>>();
-            ff.ToCursorAsync().Returns(Task.FromResult(cursorMock));
-            ff.Limit(1).Returns(ff);
-
-            var result = ff.FirstOrDefaultAsync().Result;
-            Assert.AreEqual("asd", result);
             var item = new DataItem() { Key = "124", Value = "1234" };
-            var mock = NSubstitute.Substitute.For<MongoCollectionBase<DataItem>>();
-            mock.Find(x => x.Key.Equals(item.Key)).FirstOrDefaultAsync().Returns(Task.FromResult(item));
-            _dbContext.Items.Returns(mock);
+            await _context.Items.InsertOneAsync(item);
 
             //Act
             var ret = _repository.GetDataAsync(item.Key);
@@ -44,7 +42,53 @@ namespace Simple.Api.Tests.Repository
             ret.Should().NotBeNull();
             ret.Result.Key.Should().Be(item.Key);
             ret.Result.Value.Should().Be(item.Value);
+        }
+        [Fact]
+        public async Task Should_create_a_data_item_into_repository()
+        {
+            //Arrange
+            var item = new DataItem() { Key = "124", Value = "1233" };
+            //Act
+            await _repository.CreateDataAsync(item.Key, item.Value);
+            //Assert
+            var ret = await _repository.GetDataAsync(item.Key);
+            ret.Value = item.Value;
+        }
 
+        [Fact]
+        public async Task Should_update_data_in_repository()
+        {
+            //Arrange
+            var key = "123";
+            var value = "123";
+            var newValue = "456";
+            await _repository.CreateDataAsync(key, value);
+            var item = await _repository.GetDataAsync(key);
+            item.Should().NotBeNull();
+
+            //Act
+            await _repository.UpdateDataAsync(key, newValue);
+            var newItem = await _repository.GetDataAsync(key);
+            
+            //Assert
+            newItem.Value.Should().Be(newValue);    
+
+
+        }
+        [Fact]
+        public async Task Should_delete_data_in_repository()
+        {
+            //Arrange
+            var key = "123";
+            var value = "123";
+            await _repository.CreateDataAsync(key, value);
+            var item = await _repository.GetDataAsync(key);
+            item.Should().NotBeNull();
+            //Act
+            await _repository.DeleteAsync(key);
+            var newItem = await _repository.GetDataAsync(key);
+            //Assert
+            newItem.Should().BeNull();
         }
     }
 }

@@ -2,6 +2,42 @@
   <Settings>
     <AutoEnable>True</AutoEnable>
     <CurrentEngineMode>Run all tests manually [Global]</CurrentEngineMode>
+    <MetricsTreeLayout>
+      <Column>
+        <Name>Name</Name>
+        <Width>400</Width>
+      </Column>
+      <Column>
+        <Name>CodeCoveragePercentage</Name>
+        <Width>200</Width>
+      </Column>
+      <Column>
+        <Name>CompiledLines</Name>
+        <Width>200</Width>
+      </Column>
+      <Column>
+        <Name>CoveredLines</Name>
+        <Width>200</Width>
+      </Column>
+      <Column>
+        <Name>UncoveredLines</Name>
+        <Width>200</Width>
+      </Column>
+      <Column>
+        <Name>CodeLines</Name>
+        <Width>200</Width>
+      </Column>
+      <Column>
+        <Name>ExcludedLines</Name>
+        <Width>200</Width>
+      </Column>
+    </MetricsTreeLayout>
+    <MetricsTreeSortOrder>
+      <Sort>
+        <Name>CodeCoveragePercentage</Name>
+        <Order>Ascending</Order>
+      </Sort>
+    </MetricsTreeSortOrder>
     <TestsWindowSplitterDistance>121</TestsWindowSplitterDistance>
   </Settings>
 </SolutionConfiguration>
