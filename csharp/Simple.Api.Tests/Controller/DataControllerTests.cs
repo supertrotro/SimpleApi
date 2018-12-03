@@ -72,7 +72,7 @@ namespace Simple.Api.Tests.Controller
         {
             //Arrange
             var key = "^$$&$&";
-            _repository.GetDataAsync(key).Returns(async x => throw new Exception("An exeption"));
+             _repository.GetDataAsync(key).Returns(async x => throw new Exception("An exeption"));
             //Act
             var ret = await _controller.GetDataAsync(key);
             //Assert
